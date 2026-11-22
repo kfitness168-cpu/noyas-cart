@@ -637,6 +637,38 @@ const M=[
 const DONATE=1;M.forEach(m=>{m.price+=DONATE;});
 const donated=()=>DONATE*S.cart.filter(l=>l.id!=="meal").reduce((s,l)=>s+l.qty,0);
 const donLine=()=>{const d=donated();return d?`<p class="don">💛 ${ils(d)} מהמחיר הולכים לתרומה לקהילת הצליאק</p>`:"";};
+/* ---------- INGREDIENTS (what goes into each dish; shown to the customer and printed on the kitchen ticket) ----------
+   Easy to edit: one line per dish. An ingredient that starts with * is fixed (the customer can't remove it). */
+const ING={
+ "bg-shak":["*בגט ללא גלוטן","*2 ביצים","רוטב שקשוקה"],
+ "bg-omelet":["*בגט ללא גלוטן","*2 ביצים","שמנת","ירקות"],
+ "bg-omelet-l":["*בגט ללא גלוטן","*3 ביצים","שמנת","ירקות"],
+ "bg-tuna":["*בגט ללא גלוטן","*טונה","מיונז","ירקות"],
+ "bg-eggsalad":["*בגט ללא גלוטן","*2 ביצים קשות","מיונז","ירקות"],
+ "bg-cheese":["*בגט ללא גלוטן","שמנת","בולגרית","ירקות"],
+ "bg-salmon":["*בגט ללא גלוטן","*2 פרוסות סלמון (40 גרם)","שמנת","ירקות"],
+ "bt-cheese":["*בייגל ללא גלוטן (בטוסטר)","*2 פרוסות צהובה","זיתים","ירקות"],
+ "bt-cheeses":["*בייגל ללא גלוטן (בטוסטר)","צהובה","בולגרית","זיתים"],
+ "bt-salmon":["*בייגל ללא גלוטן","*2 פרוסות סלמון (40 גרם)","שמנת","ירקות"],
+ "bt-tuna":["*בייגל ללא גלוטן","*טונה","מיונז","ירקות"],
+ "bt-omelet":["*בייגל ללא גלוטן","*2 ביצים","שמנת","ירקות"],
+ "pt-shak":["*פיתה ללא גלוטן","*2 ביצים","רוטב שקשוקה"],
+ "pt-omelet":["*פיתה ללא גלוטן","*2 ביצים","ירקות"],
+ "pt-tuna":["*פיתה ללא גלוטן","*טונה","מיונז","ירקות"],
+ "sh-tray":["*2 ביצים ב־180 גרם רוטב","לחמנייה בצד"],
+ "sh-bul":["*2 ביצים ב־180 גרם רוטב","*40 גרם בולגרית","לחמנייה בצד"],
+ "sh-fingers":["*מנת שקשוקה","2 לחמניות אצבע בצד"],
+ "pizza":["*בצק פיצה ללא גלוטן","רוטב עגבניות","גבינה"],
+ "salad-s":["*ירקות קצוצים","שמן זית","לימון"],
+ "salad-l":["*ירקות קצוצים","שמן זית","לימון"],
+ "salad-tuna":["*ירקות קצוצים","*80 גרם טונה","שמן זית","לימון"],
+ "salad-egg":["*ירקות קצוצים","*2 ביצים קשות","שמן זית","לימון"],
+ "salad-bul":["*ירקות קצוצים","*60 גרם בולגרית","שמן זית","לימון"],
+ "meal-shak":["*שקשוקה בחמגשית","*סלט קטן","*פחית"],
+ "meal-fingers":["*שקשוקה","*2 לחמניות אצבע","*סלט קטן","*פחית"],
+ "meal":["*סלט קטן","*פחית"]
+};
+const ingOf=id=>(ING[id]||[]).map(x=>({n:x.replace(/^\*/,""),fixed:x[0]==="*"}));
 const MEAL={id:"meal",name:"הפוך לארוחה: סלט קטן + פחית",price:24,was:25,art:"salad",tone:"t-honey2",groups:[CAN,EGG]};
 /* Noya images: temporary logo for now. To switch back to the real photo: NOYA_IMG="img/noya.jpg", NOYA_FACE="img/noya-face.jpg", NOYA_FIT="cover" (and the bubble <img> in the HTML). */
 const NOYA_IMG=IMGU("logo.png"),NOYA_FACE=IMGU("logo-face.jpg"),NOYA_FIT="contain",NOYA_ALT="הלוגו של העגלה של נויה: נויה בעגלה מחזיקה סנדוויץ׳";
@@ -921,7 +953,7 @@ function home(){
 }
 
 /* ---------- DISH SHEET ---------- */
-function openDish(id,from){const m=byId(id);if(!m||m.out)return;opener=from||document.activeElement;S.sheet={type:"dish",id,qty:1,sel:Object.fromEntries(m.groups.map(g=>[g.id,g.req?[0]:[]]))};renderLayer(true);}
+function openDish(id,from){const m=byId(id);if(!m||m.out)return;opener=from||document.activeElement;S.sheet={type:"dish",id,qty:1,rm:[],sel:Object.fromEntries(m.groups.map(g=>[g.id,g.req?[0]:[]]))};renderLayer(true);}
 function dishPrice(){const m=byId(S.sheet.id);let p=m.price;m.groups.forEach(g=>S.sheet.sel[g.id].forEach(i=>p+=g.choices[i][1]));return p;}
 function dishSheet(){
   const s=S.sheet,m=byId(s.id);
@@ -934,16 +966,19 @@ function dishSheet(){
     <div><span class="gf"><svg aria-hidden="true" focusable="false"><use href="#wheatno"/></svg>ללא גלוטן</span>${m.tag?`<span class="tag">${esc(m.tag)}</span>`:""}</div>
     <div class="diet">${(m.diet||[]).map(d=>`<span>${DIET[d]}</span>`).join("")}</div>
     <p style="margin:0;color:var(--brown2)">${esc(m.desc)}</p>
+    ${ingOf(m.id).some(x=>!x.fixed)?`<div role="group" aria-labelledby="g-ing" style="display:flex;flex-direction:column;gap:8px"><div class="sec" id="g-ing">מה בפנים? <small>אפשר להוריד מה שלא רוצים</small></div>`+ingOf(m.id).map((x,i)=>{const on=!(s.rm||[]).includes(x.n);return x.fixed?`<div class="opt" style="opacity:.7"><span class="c" aria-hidden="true" style="background:var(--brown2);border-color:var(--brown2)">✓</span>${esc(x.n)}<span class="add">קבוע</span></div>`:`<button class="opt" role="checkbox" aria-checked="${on}" data-rmi="${i}"><span class="c" aria-hidden="true">${on?"✓":""}</span>${on?esc(x.n):`<s>${esc(x.n)}</s>`}${on?"":`<span class="add">בלי</span>`}</button>`;}).join("")+`</div>`:""}
     ${m.groups.map(g=>`<div role="${g.req?"radiogroup":"group"}" aria-labelledby="g-${g.id}" style="display:flex;flex-direction:column;gap:8px"><div class="sec" id="g-${g.id}">${esc(g.title)} <small>${g.req?"חובה · בחירה אחת":"לא חובה"}</small></div>`+g.choices.map(([n,p],i)=>{const on=s.sel[g.id].includes(i);return `<button class="opt" role="${g.req?"radio":"checkbox"}" aria-checked="${on}" data-pick="${g.id}:${i}"><span class="${g.req?"r":"c"}" aria-hidden="true">${!g.req&&on?"✓":""}</span>${esc(n)}${p?`<span class="add">+${ils(p)}</span>`:""}</button>`;}).join("")+`</div>`).join("")}
    </div>
    <div class="footbar in"><div class="qty" role="group" aria-label="כמות"><button data-q="-1" aria-label="הפחתת כמות">−</button><b aria-live="polite">${s.qty}</b><button data-q="1" aria-label="הוספת כמות">+</button></div><button class="btn leaf" style="flex:1" data-add>הוספה לעגלה · ${ils(dishPrice()*s.qty)}</button></div>
   </div></div>`;
 }
-function addLine(m,sel,qty){
-  const opts=[];let unit=m.price;
+function addLine(m,sel,qty,rm){
+  const opts=[];let unit=m.price;rm=rm||[];
   m.groups.forEach(g=>(sel[g.id]||[]).forEach(i=>{opts.push(g.choices[i][0]);unit+=g.choices[i][1];}));
+  rm.forEach(n=>opts.push("בלי "+n));
+  const ing=ingOf(m.id).map(x=>x.n).filter(n=>!rm.includes(n));
   const key=m.id+"|"+opts.join(",");const ex=S.cart.find(l=>l.key===key);
-  if(ex)ex.qty+=qty;else S.cart.push({key,id:m.id,name:m.name,opts,unit,qty});
+  if(ex)ex.qty+=qty;else S.cart.push({key,id:m.id,name:m.name,opts,unit,qty,ing,rm});
   sfx("add");bumpCart();
 }
 
@@ -1146,6 +1181,7 @@ function admin(){
   LS.set("isAdmin",true);
   const list=LS.get("orders",[]);
   $("#app").innerHTML=backBar("ניהול: הזמנות וכרטיסיות","home")+`<div class="in adm" style="display:flex;flex-direction:column;gap:10px">
+  <a class="btn leaf" href="/admin.html">🍳 לדף ניהול ההזמנות (בונים למטבח)</a>
   <p style="margin:0;font-size:13.5px;color:var(--brown2)">כל הזמנה נשמרת כאן גם אם הלקוח לא לחץ "שליחה" בוואטסאפ. באב־הטיפוס ההזמנות נשמרות רק במכשיר הזה. באתר האמיתי הן יישמרו בשרת ויופיעו אצלך מכל מקום.</p>
   ${(()=>{if(!list.length)return"";const g={};list.forEach(o=>{const k=o.dayIso||"";(g[k]=g[k]||[]).push(o);});
     return Object.keys(g).sort().map(k=>{const os=g[k].sort((a,b)=>String(a.slot).localeCompare(String(b.slot)));const dt=k?new Date(k+"T12:00:00Z"):null;const sum=os.reduce((t,o)=>t+o.total,0);
@@ -1223,7 +1259,7 @@ document.addEventListener("click",e=>{
   if(d.share){const url=location.href.split("#")[0]+"#item-"+d.share;(navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast("הקישור למנה הועתק"),()=>toast("קישור למנה: #item-"+d.share));return;}
   if(d.pick){const[g,i]=d.pick.split(":");const grp=byId(S.sheet.id).groups.find(x=>x.id===g);const a=S.sheet.sel[g],n=+i;S.sheet.sel[g]=grp.req?[n]:(a.includes(n)?a.filter(x=>x!==n):[...a,n]);renderLayer();return;}
   if(d.q){S.sheet.qty=Math.max(1,S.sheet.qty+ +d.q);renderLayer();return;}
-  if(d.add!==undefined){const m=byId(S.sheet.id);addLine(m,S.sheet.sel,S.sheet.qty);
+  if(d.add!==undefined){const m=byId(S.sheet.id);addLine(m,S.sheet.sel,S.sheet.qty,S.sheet.rm);
     if(view().startsWith("item-"))history.replaceState(null,"",location.pathname+location.search);
     const has=(m.meal&&!S.cart.some(l=>l.id==="meal"))||m.up.some(id=>vis(byId(id))&&!S.cart.some(l=>l.id===id));
     render();
@@ -1285,8 +1321,10 @@ document.addEventListener("submit",e=>{
   if(S.order.disc){const cp=LS.get("couponPhones",[]);cp.push(np(f.phone));LS.set("couponPhones",cp);}
   if(S.sos){const pr=LS.get("profile",{})||{};LS.set("profile",Object.assign(pr,{first:f.first,last:f.last,phone:f.phone}));}else saveProfile();LS.set("last",{lines:S.cart.slice()});S.last={lines:S.cart.slice()};LS.set("ordered",true);
   const all=LS.get("orders",[]);all.unshift(S.order);LS.set("orders",all.slice(0,100));
+  try{fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(S.order),keepalive:true}).catch(()=>{});}catch(e){}
   S.cart=[];S.couponOk=false;S.couponMsg="";S.form.coupon="";S.form.notes="";S.form.kcode="";S.form.confirm=false;S.form.day="";S.punch={ok:false};if(S.sos){S.sos=false;Object.assign(S.form,{kid:"",kclass:"",school:"",saddr:"",sostime:"",recv:"",pay:"",avail:false});}S.order.wa=window.waOpen(waText(S.order));LS.set("orders",LS.get("orders",[]).map(x=>x.at===S.order.at?Object.assign(x,{urgent:S.order.urgent}):x));go("thanks");sfx("pay");setTimeout(confetti,120);
 });
+document.addEventListener("click",e=>{const b=e.target.closest("[data-rmi]");if(!b||!S.sheet||S.sheet.type!=="dish")return;const x=ingOf(S.sheet.id)[+b.dataset.rmi];if(!x||x.fixed)return;const r=S.sheet.rm||[];S.sheet.rm=r.includes(x.n)?r.filter(n=>n!==x.n):[...r,x.n];renderLayer();});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-dayopt]");if(!b)return;S.form.day=b.dataset.dayopt;S.form.confirm=false;const y=window.scrollY;checkout();window.scrollTo(0,y);document.querySelector(`[data-dayopt="${b.dataset.dayopt}"]`)?.focus({preventScroll:true});});
 document.addEventListener("change",e=>{if(e.target.id==="town"){const v=e.target.value;if(v)setTown(v);else{S.del="out";S.town="";}const y=window.scrollY;render();window.scrollTo(0,y);$("#town")?.focus({preventScroll:true});return;}if(e.target.id==="confirm"){S.form.confirm=e.target.checked;}if(e.target.id==="avail"){S.form.avail=e.target.checked;}if(e.target.id==="faragree"){S.form.faragree=e.target.checked;}if(["otown","address","saddr"].includes(e.target.id)&&S.town==="other"&&S.far&&S.far.key!==farKey())checkoutKeep();});
 document.addEventListener("click",e=>{
