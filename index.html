@@ -615,13 +615,14 @@ const CAN={id:"can",title:"שתייה",req:true,choices:[["קולה",0],["קול
 const OMLET={id:"style",title:"איך להכין?",req:true,choices:[["חביתה",0],["מקושקשת",0]]};
 const UPB=["salad-s","salad-l","cola","water"],UPS=["salad-s","salad-l","cola","water"];
 const BREAD={id:"bread",title:"באיזה לחם?",req:true,choices:[["לחמנייה",0],["פיתה",0]]};
+const BREAD_SALMON={id:"bread",title:"באיזה לחם?",req:true,choices:[["לחמנייה",0],["בייגל",0]]};
 const BREAD_NB={id:"bread",title:"באיזה לחם?",req:true,choices:[["בגט",0],["פיתה",0],["לחמנייה",0]]};
 const M=[
  {id:"bg-tuna",cat:"sandwiches",name:"כריך טונה",desc:"טונה במיונז וירקות, בלחמנייה או בפיתה",price:42,art:"sandwich",tone:"t-leaf",tag:"מומלץ",diet:[],groups:[BREAD,ADDONS],meal:true,up:UPB},
  {id:"bg-eggsalad",cat:"sandwiches",name:"כריך סלט ביצים",desc:"2 ביצים קשות במיונז וירקות, בלחמנייה או בפיתה",price:38,art:"sandwich",tone:"t-honey",diet:[],groups:[BREAD,ADDONS],meal:true,up:UPB},
  {id:"bg-omelet",cat:"sandwiches",name:"כריך חביתה",desc:"חביתה מ־2 ביצים, שמנת וירקות, בלחמנייה או בפיתה",price:38,art:"sandwich",tone:"t-honey",diet:[],groups:[BREAD,ADDONS],meal:true,up:UPB},
  {id:"bg-cheese",cat:"sandwiches",name:"כריך גבינות",desc:"שמנת, בולגרית, זיתים וירקות, בלחמנייה או בפיתה",price:38,art:"sandwich",tone:"t-leaf",diet:[],groups:[BREAD,ADDONS],meal:true,up:UPB},
- {id:"bg-salmon",cat:"sandwiches",name:"כריך סלמון",desc:"2 פרוסות סלמון, שמנת וירקות, בלחמנייה או בפיתה",price:56,art:"sandwich",tone:"t-coral",tag:"פרימיום",diet:[],groups:[BREAD,ADDONS],meal:true,up:UPB},
+ {id:"bg-salmon",cat:"sandwiches",name:"כריך סלמון",desc:"2 פרוסות סלמון, שמנת וירקות, בלחמנייה או בבייגל",price:56,art:"sandwich",tone:"t-coral",tag:"פרימיום",diet:[],groups:[BREAD_SALMON,ADDONS],meal:true,up:UPB},
  {id:"bt-cheese",cat:"sandwiches",name:"בייגל טוסט",desc:"2 פרוסות צהובה, בולגרית, זיתים וירקות, בטוסטר",price:42,art:"bagel",tone:"t-honey",diet:[],groups:[ADDONS],meal:true,up:UPB},
  {id:"sh-tray",cat:"shakshuka",name:"שקשוקה קומפלט",desc:"2 ביצים ברוטב שקשוקה, בייגל, סלט קטן וזיתים בצד",price:59,art:"shakshuka",tone:"t-coral",tag:"האהובה על נויה",diet:[],groups:[],up:["cola","water"]},
  {id:"salad-l",cat:"salads",name:"סלט גדול",desc:"ירקות קצוצים, שמן זית ולימון. אפשר להוסיף ביצה, טונה, בולגרית או זיתים",price:31,art:"salad",tone:"t-leaf",diet:[],groups:[ADDONS],up:["cola","water"]},
