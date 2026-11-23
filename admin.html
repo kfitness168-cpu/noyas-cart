@@ -67,6 +67,8 @@ h3.sec{font-family:var(--display);font-weight:900;font-size:16px;margin:18px 16p
 .item:first-child{border-top:none}
 .ih{display:flex;gap:8px;align-items:center}
 .ih .q{font-family:var(--display);font-weight:900;font-size:17px;min-width:30px;height:30px;padding:0 4px;border-radius:8px;background:var(--brown);color:#fff;display:flex;align-items:center;justify-content:center}
+.brd{font-family:var(--display);font-weight:900;font-size:17px;background:#F2B544;color:#3B2A20;border-radius:8px;padding:2px 10px;margin-inline-start:auto}
+.brc{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}.brc span{background:#F2B544;border-radius:10px;padding:8px 12px;font-family:var(--display);font-weight:900;font-size:16px}
 .ih .n{font-family:var(--display);font-weight:900;font-size:17px}
 .ings{list-style:none;margin:6px 0 0;padding:0 38px 0 0}
 .ing{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;padding:5px 0;font-size:15.5px;text-align:right}
@@ -154,7 +156,8 @@ async function delOrder(o){
 
 /* ---------- ticket logic ---------- */
 // What actually goes into each line: ingredients the customer kept + choices they made (choices that start with "בלי" are left off)
-function partsOf(l){const ing=(l.ing||[]).map(n=>({n,opt:false}));const op=(l.opts||[]).filter(x=>!/^בלי /.test(x)).map(n=>({n,opt:true}));return ing.concat(op);}
+const BREADS=["לחמנייה","פיתה"];const breadOf=l=>(l.opts||[]).find(x=>BREADS.includes(x))||(/בייגל/.test(l.name)?"בייגל":"");
+function partsOf(l){const ing=(l.ing||[]).map(n=>({n,opt:false}));const op=(l.opts||[]).filter(x=>!/^בלי /.test(x)&&!BREADS.includes(x)).map(n=>({n,opt:true}));return ing.concat(op);}
 const chkKey=o=>"tk:"+o.key;
 function checks(o){return LS.get(chkKey(o),{});}
 function allChecked(o){const c=checks(o);let tot=0,ok=0;o.lines.forEach((l,li)=>{const p=partsOf(l);if(!p.length){tot++;if(c[li+":x"])ok++;}else p.forEach((_,pi)=>{tot++;if(c[li+":"+pi])ok++;});});return tot>0&&ok===tot;}
@@ -187,17 +190,17 @@ function sendCourier(o,to){
 function kitchen(){
   const act=A.orders.filter(o=>o.status==="new"||o.status==="prep");
   const g={};act.forEach(o=>o.lines.forEach(l=>{const k=l.name;(g[k]=g[k]||{q:0,v:{}}).q+=l.qty;const vk=(l.opts||[]).join(" · ");if(vk)g[k].v[vk]=(g[k].v[vk]||0)+l.qty;}));
-  const kc=LS.get("kc:"+A.day,{});
+  const kc=LS.get("kc:"+A.day,{});const bc={};act.forEach(o=>o.lines.forEach(l=>{const b=breadOf(l);if(b)bc[b]=(bc[b]||0)+l.qty;}));const brc=Object.keys(bc).length?`<div class="brc">${Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([b,n])=>`<span>🥖 ${n} ${esc(b)}</span>`).join("")}</div>`:"";
   const rows=Object.keys(g).sort((a,b)=>g[b].q-g[a].q).map(k=>{const v=Object.entries(g[k].v).map(([t,n])=>`${n} ${t}`).join(" · ");const on=!!kc[k];
     return `<button class="krow${on?" ok":""}" data-kc="${esc(k)}" aria-pressed="${on}"><span class="q">${g[k].q}×</span><span><span class="n">${esc(k)}</span>${v?`<br><span class="m">${esc(v)}</span>`:""}</span><span class="ck" aria-hidden="true">${on?"✓":""}</span></button>`;}).join("");
-  return `<section class="box" aria-labelledby="kt"><h2 id="kt">🍳 מה להכין (כל ההזמנות יחד)</h2><p>רק הזמנות חדשות ובהכנה · מסמנים ✓ כשמוכן</p>${rows||`<div class="empty">אין כרגע מה להכין 🎉</div>`}</section>`;
+  return `<section class="box" aria-labelledby="kt"><h2 id="kt">🍳 מה להכין (כל ההזמנות יחד)</h2><p>רק הזמנות חדשות ובהכנה · מסמנים ✓ כשמוכן</p><p style="margin:6px 0"><b>🥪 כריכים שהוזמנו ליום הזה: ${A.orders.reduce((t,o)=>t+(+o.sw||0),0)} מתוך 30</b></p><b>לחמים להכין:</b>${brc}${rows||`<div class="empty">אין כרגע מה להכין 🎉</div>`}</section>`;
 }
 function ticket(o){
   const c=checks(o),pick=o.del==="pickup",done=allChecked(o);
   const items=o.lines.map((l,li)=>{const p=partsOf(l);
     const list=p.length?p.map((x,pi)=>{const on=!!c[li+":"+pi];return `<li><button class="ing${on?" on":""}${x.opt?" opt":""}" data-ck="${li}:${pi}" aria-pressed="${on}"><span class="c" aria-hidden="true">${on?"✓":""}</span><span>${esc(x.n)}</span></button></li>`;}).join("")
       :`<li><button class="ing${c[li+":x"]?" on":""}" data-ck="${li}:x" aria-pressed="${!!c[li+":x"]}"><span class="c" aria-hidden="true">${c[li+":x"]?"✓":""}</span><span>מוכן</span></button></li>`;
-    return `<div class="item"><div class="ih"><span class="q">${l.qty}</span><span class="n">${esc(l.name)}</span></div><ul class="ings">${list}</ul></div>`;}).join("");
+    return `<div class="item"><div class="ih"><span class="q">${l.qty}</span><span class="n">${esc(l.name)}</span>${breadOf(l)?`<span class="brd">🥖 ${esc(breadOf(l))}</span>`:""}</div><ul class="ings">${list}</ul></div>`;}).join("");
   const ph=intl(o.phone);
   return `<div class="ticket" id="tk">
    <div class="th"><span class="num">#${esc(o.num)}</span><span class="pill s-${o.status}">${ST[o.status]}</span></div>

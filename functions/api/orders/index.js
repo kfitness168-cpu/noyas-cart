@@ -1,4 +1,4 @@
-import { json, isAdmin, hasDb } from "../_shared.js";
+import { json, isAdmin, hasDb, addCap } from "../_shared.js";
 
 const STATUSES = ["new", "prep", "sent", "done"];
 
@@ -15,7 +15,9 @@ export async function onRequestPost({ request, env }) {
   await env.ORDERS.put("seq", String(n));
   const key = `o:${day}:${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const rec = { ...o, num: n, status: "new", savedAt: new Date().toISOString(), key };
+  rec.sw = Math.max(0, Math.min(60, parseInt(o.sw, 10) || 0));
   await env.ORDERS.put(key, JSON.stringify(rec), { expirationTtl: 60 * 60 * 24 * 120 });
+  await addCap(env, day, rec.sw);
   return json({ ok: true, num: n });
 }
 

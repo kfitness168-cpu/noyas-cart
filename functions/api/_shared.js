@@ -20,3 +20,11 @@ export async function isAdmin(request, env) {
 
 // true when the KV namespace "ORDERS" is bound to the Pages project
 export const hasDb = env => !!(env && env.ORDERS);
+
+// Daily sandwich counter (for the cap shown on the site). Key: cap:YYYY-MM-DD
+export async function addCap(env, day, n) {
+  if (!n) return;
+  const k = "cap:" + day;
+  const c = Math.max(0, (parseInt(await env.ORDERS.get(k), 10) || 0) + n);
+  await env.ORDERS.put(k, String(c), { expirationTtl: 60 * 60 * 24 * 40 });
+}
