@@ -573,7 +573,7 @@ const CUTOFF_H=10;
 const CUT=CUTOFF_H+":00";
 const OPEN=0, CLOSE=CUTOFF_H*60, DAYS=[0,1,2,3,4,5], FREE=150, COUPON="NOYA10";
 const DAYN=["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
-const CATS=[["sandwiches","כריכים"],["salads","סלט"],["drinks","שתייה"],["sweets","מתוקים"]];
+const CATS=[["sandwiches","כריכים"],["shakshuka","שקשוקה"],["salads","סלט"],["drinks","שתייה"],["sweets","מתוקים"]];
 const DIET={nolactose:"ללא לקטוז",noegg:"ללא ביצים",nonuts:"ללא אגוזים"};
 const ADD_ALL=[["ביצה נוספת",4,"a-egg"],["בולגרית",6,"a-bul"],["גבינה צהובה",6,"a-yel"],["זיתים",3,"a-olive"],["סלט טונה",7,"a-tuna"],["סלמון מעושן",18,"a-salmon"]];
 const ADDONS={id:"x",title:"תוספות",choices:[]};
@@ -592,6 +592,7 @@ const M=[
  {id:"bg-cheese",cat:"sandwiches",name:"כריך גבינות",desc:"שמנת, בולגרית, זיתים וירקות, בלחמנייה או בפיתה",price:38,art:"sandwich",tone:"t-leaf",diet:[],groups:[BREAD],meal:true,up:UPB},
  {id:"bg-salmon",cat:"sandwiches",name:"כריך סלמון",desc:"2 פרוסות סלמון, שמנת וירקות, בלחמנייה או בפיתה",price:56,art:"sandwich",tone:"t-coral",tag:"פרימיום",diet:[],groups:[BREAD],meal:true,up:UPB},
  {id:"bt-cheese",cat:"sandwiches",name:"בייגל טוסט",desc:"2 פרוסות צהובה, בולגרית, זיתים וירקות, בטוסטר",price:42,art:"bagel",tone:"t-honey",diet:[],groups:[],meal:true,up:UPB},
+ {id:"sh-tray",cat:"shakshuka",name:"שקשוקה קומפלט",desc:"2 ביצים ברוטב שקשוקה בחמגשית, לחמנייה, סלט קטן וזיתים בצד",price:59,art:"shakshuka",tone:"t-coral",tag:"האהובה על נויה",diet:[],groups:[],up:["cola","water"]},
  {id:"salad-l",cat:"salads",name:"סלט ירקות",desc:"ירקות קצוצים, שמן זית ולימון. קטן או גדול, עם תוספת לבחירה",price:15,art:"salad",tone:"t-leaf",diet:[],groups:[{id:"sz",title:"גודל",req:true,choices:[["קטן",0],["גדול",16]]},{id:"top",title:"על הסלט",req:true,choices:[["בלי תוספת",0],["2 ביצים קשות",12],["טונה",21],["בולגרית",16]]}],up:["cola","water"]},
  {id:"cola",cat:"drinks",name:"פחית",desc:"קולה, קולה זירו או סודה",price:10,art:"can",tone:"t-coral",diet:[],groups:[{id:"fl",title:"איזו פחית?",req:true,choices:[["קולה",0],["קולה זירו",0],["סודה",0]]}],up:[]},
  {id:"tiramisu",cat:"sweets",name:"תיראליצ׳י אישי",desc:"יחידה אחת, עוגת חלב וקרמל אישית בתבנית",price:28,art:"cake",tone:"t-honey2",diet:[],groups:[],up:[]},
@@ -620,7 +621,7 @@ const ING={
  "bt-omelet":["*בייגל ללא גלוטן","*ביצים","שמנת","ירקות"],
  "pt-omelet":["*פיתה ללא גלוטן","*ביצים","ירקות"],
  "pt-tuna":["*פיתה ללא גלוטן","*טונה","מיונז","ירקות"],
- "sh-tray":["*ביצים ברוטב","לחמנייה בצד"],
+ "sh-tray":["*2 ביצים ברוטב שקשוקה","*לחמנייה","*סלט קטן","זיתים"],
  "sh-bul":["*ביצים ברוטב","*בולגרית","לחמנייה בצד"],
  "sh-fingers":["*מנת שקשוקה","2 לחמניות אצבע בצד"],
  "pizza":["*בצק פיצה ללא גלוטן","רוטב עגבניות","גבינה"],
@@ -984,7 +985,7 @@ setTimeout(()=>{if(!LS.get("town",null)&&!S.del&&!S.sheet&&["","home","main-menu
 
 /* ---------- SWEET SHEET ---------- */
 const sweets=()=>M.filter(m=>m.cat==="sweets"&&vis(m)&&!m.out);
-const isMain=m=>m&&m.cat==="sandwiches";
+const isMain=m=>m&&(m.cat==="sandwiches"||m.cat==="shakshuka");
 const wantSweet=()=>sweets().length&&!S.cart.some(l=>(byId(l.id)||{}).cat==="sweets");
 function openSweet(){S.sheet={type:"sweet",egg:{}};renderLayer(true);}
 function sweetSheet(){
@@ -1002,7 +1003,7 @@ function sweetSheet(){
 function cardHtml(m){const quick=!m.groups.length;return `<div class="card ${m.out?"out":""}"><button class="cardbtn" ${m.out?"disabled":`data-open="${m.id}"`} aria-label="${esc(m.name)}, ${ils(m.price)}${m.out?", אזל להיום":""}">${art(m)}<span class="info"><h3>${esc(m.name)}${m.tag?`<span class="tag">${esc(m.tag)}</span>`:""}</h3><p>${m.out?"אזל להיום, נחזור מחר":esc(m.desc)}</p><span class="price">${ils(m.price)}</span></span></button>${m.out?"":`<button class="plus" ${quick?`data-quick="${m.id}"`:`data-open="${m.id}"`} aria-label="הוספת ${esc(m.name)} לעגלה">+</button>`}</div>`;}
 function sosBar(){return S.sos?`<div class="sosbar" role="note"><span>🆘 הזמנת SOS לבית הספר · משלוח VIP</span><button type="button" class="evlink" data-sosoff>ביטול SOS</button></div>`:"";}
 function sosPage(){const w=windowState();S.sos=true;if(S.del==="pickup")S.del=null;S.form.day="";
-  const SC=["sandwiches"],items=M.filter(m=>SC.includes(m.cat)&&vis(m)).sort((a,b)=>SC.indexOf(a.cat)-SC.indexOf(b.cat));
+  const SC=["sandwiches","shakshuka"],items=M.filter(m=>SC.includes(m.cat)&&vis(m)).sort((a,b)=>SC.indexOf(a.cat)-SC.indexOf(b.cat));
   $("#app").innerHTML=backBar("SOS ארוחת 10","home")+`<div class="in" style="display:flex;flex-direction:column;gap:12px">
    <section class="soshero" aria-labelledby="sos-t"><h1 class="h" id="sos-t">🆘 SOS ארוחת 10</h1>
     <p>הילד נתקע בבית הספר בלי ארוחה? או שלא בא לו את מה שהכנתם? נביא לו ארוחה ללא גלוטן, ישר לבית הספר.</p>
@@ -1179,11 +1180,13 @@ function a11yDoc(){
 const view=()=>location.hash.slice(1);
 /* ---------- daily sandwich cap: CAP sandwiches per day in total (all customers). Change the number here. ---------- */
 const CAP=30;const capUsed={};
-const isSw=id=>{const m=byId(id);return !!m&&m.cat==="sandwiches";};
+const isSw=id=>{const m=byId(id);return !!m&&(m.cat==="sandwiches"||m.cat==="shakshuka");};
 const cartSw=()=>S.cart.filter(l=>isSw(l.id)).reduce((s,l)=>s+l.qty,0);
 function capLeft(){return CAP-(capUsed[chosenDay().iso]||0)-cartSw();}
 function capMsg(left){return left>0?(left===1?"נשאר רק כריך אחד ליום הזה":`נשארו רק ${left} כריכים ליום הזה`):"הכריכים ליום הזה נגמרו. אפשר להזמין ליום אחר";}
-function capBanner(){const v=view();if(!["","home","main-menu"].includes(v))return;const d=chosenDay(),left=CAP-(capUsed[d.iso]||0);if(left>5)return;const a=$("#app");if(!a)return;a.insertAdjacentHTML("afterbegin",`<p role="status" style="margin:10px 16px 0;padding:10px 12px;border-radius:12px;background:#FFF4D6;border:1.5px dashed #F2B544;font-size:14px">${left<=0?"🥪 הכריכים ל"+esc(d.label||"יום הזה")+" נגמרו. אפשר להזמין כבר עכשיו ליום אחר (בוחרים יום בתשלום).":"🥪 נשארו רק "+left+" כריכים ל"+esc(d.label||"יום הזה")+"."}</p>`);}
+function capBanner(){const v=view();if(!["","home","main-menu"].includes(v))return;const at=$("#sec-sandwiches");if(!at)return;const d=chosenDay(),left=CAP-(capUsed[d.iso]||0),dl=esc(d.label||"יום הזה");
+  const extra=left<=0?`<br><b>הכריכים ל${dl} נגמרו.</b> אפשר כבר עכשיו להזמין ליום אחר (בוחרים יום בתשלום).`:left<=5?`<br><b>נשארו רק ${left===1?"כריך אחד":left+" כריכים"} ל${dl}.</b>`:"";
+  at.insertAdjacentHTML("afterend",`<p role="status" style="margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#FFF4D6;border:1.5px dashed #F2B544;font-size:14px;line-height:1.5">🥪 בינתיים אנחנו מכינים עד ${CAP} כריכים ביום, כדי לתת לכם שירות מקצועי ואמין, ושכל כריך יגיע אליכם טרי. מזמינים עד ${CUT}, או עד שהכריכים נגמרים.${extra}</p>`);}
 function capFetch(){const iso=chosenDay().iso;try{fetch("/api/cap?day="+iso,{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{if(j&&typeof j.count==="number"&&capUsed[iso]!==j.count){capUsed[iso]=j.count;if(!S.sheet){const y=window.scrollY;render();window.scrollTo(0,y);}}}).catch(()=>{});}catch(e){}}
 function render(){
   const v=view();
