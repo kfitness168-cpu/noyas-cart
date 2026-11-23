@@ -243,6 +243,8 @@ function render(){
   <div class="list">${os.map(o=>A.open===o.key?ticket(o):`<button class="row" data-open="${esc(o.key)}"><span class="no">#${esc(o.num)}</span><span class="w"><b>${esc(o.first)} ${esc(o.last)}</b>${o.urgent?' <span class="urg">דחוף</span>':""}<br>${o.del==="pickup"?"איסוף עצמי":esc(o.address)}</span><span class="sum">${ils(o.total)}</span><span class="pill s-${o.status}">${ST[o.status]}</span></button>`).join("")||`<div class="row" style="justify-content:center;color:var(--brown2)">אין הזמנות ליום הזה</div>`}</div>
   <h3 class="sec">🔔 התראות על הזמנות חדשות</h3>
   <div class="card">${pushCard()}</div>
+  <h3 class="sec">🔎 גוגל</h3>
+  <div class="card"><a class="big b-done" href="/admin-seo.html" style="margin-top:0">🔎 גוגל ומילות מפתח</a><span style="font-size:13px;color:var(--brown2)">כותרות, טקסטים ומילות מפתח שגוגל רואה</span></div>
   <h3 class="sec">⚙️ הגדרות</h3>
   <form class="card" id="sf"><label>שם השליח<input id="cname" value="${esc(c.name||"")}" autocomplete="off"></label><label>טלפון השליח (וואטסאפ)<input id="cphone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" value="${esc(c.phone||"")}" placeholder="05X-XXXXXXX"></label><button class="big b-done" type="submit" style="margin-top:2px">שמירה</button><button type="button" class="del" data-logout style="align-self:flex-start">יציאה מהחשבון</button></form>`;
 }
