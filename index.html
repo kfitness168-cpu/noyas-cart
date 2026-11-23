@@ -975,16 +975,18 @@ function addLine(m,sel,qty,rm){
 function upsellSheet(){
   const s=S.sheet,m=byId(s.id);
   const items=m.up.map(byId).filter(x=>vis(x)&&!S.cart.some(l=>l.id===x.id));
+  const swt=isMain(m)&&wantSweet()?sweets():[];
   const showMeal=m.meal&&!S.cart.some(l=>l.id==="meal");
   const ch=(id,g)=>((s.egg[id]||{})[g.id])||0;
   const optP=x=>x.groups.filter(g=>g.req).reduce((t,g)=>t+g.choices[ch(x.id,g)][1],0);
-  const total=(s.pick.meal?MEAL.price+optP(MEAL):0)+items.reduce((t,x)=>t+(s.pick[x.id]?x.price+optP(x):0),0);
+  const total=(s.pick.meal?MEAL.price+optP(MEAL):0)+[...items,...swt].reduce((t,x)=>t+(s.pick[x.id]?x.price+optP(x):0),0);
   const subRows=x=>x.groups.filter(g=>g.req).map(g=>`<div class="sub" role="radiogroup" aria-label="${esc(g.title)} (${esc(x.name)})">${g.choices.map(([n,p],i)=>`<button class="chip" role="radio" aria-checked="${ch(x.id,g)===i}" data-egg="${x.id}:${g.id}:${i}" style="font-size:13px;padding:6px 12px">${esc(n)}${p?` +${ils(p)}`:""}</button>`).join("")}</div>`).join("");
   return `<div class="overlay" data-close><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dlg-t"><div class="grab" aria-hidden="true"></div><div class="body in">
    <div style="display:flex;align-items:center;gap:8px"><span class="gf">✓ נוסף לעגלה</span><b class="h" style="font-size:16px">${esc(m.name)}</b></div>
    <h2 class="h" id="dlg-t" style="font-size:22px">להשלים לארוחה?</h2>
    ${showMeal?`<button class="opt deal" role="checkbox" aria-checked="${!!s.pick.meal}" data-up="meal"><span class="c" aria-hidden="true">${s.pick.meal?"✓":""}</span>${art(MEAL,"thumb")}<span><b>הפכו לארוחה</b><br><span style="font-size:12.5px">סלט קטן + פחית לבחירה</span></span><span class="add">${ils(MEAL.price)}<span class="was">במקום ${ils(MEAL.was)}</span></span></button>${s.pick.meal?subRows(MEAL):""}`:""}
    ${items.map(x=>{const on=!!s.pick[x.id];return `<button class="opt" role="checkbox" aria-checked="${on}" data-up="${x.id}"><span class="c" aria-hidden="true">${on?"✓":""}</span>${art(x,"thumb")}<span><b>${esc(x.name)}</b><br><span style="font-size:12.5px;color:var(--brown2)">${esc(x.desc)}</span></span><span class="add">+${ils(x.price)}</span></button>${on?subRows(x):""}`;}).join("")}
+   ${swt.length?`<div class="sec" style="margin-top:6px">ומשהו מתוק לסיום? 🍰</div>`+swt.map(x=>{const on=!!s.pick[x.id];return `<button class="opt" role="checkbox" aria-checked="${on}" data-up="${x.id}"><span class="c" aria-hidden="true">${on?"✓":""}</span>${art(x,"thumb")}<span><b>${esc(x.name)}</b><br><span style="font-size:12.5px;color:var(--brown2)">${esc(x.desc)}</span></span><span class="add">+${ils(x.price)}</span></button>${on?subRows(x):""}`;}).join(""):""}
    <button class="btn leaf" data-upadd ${total?"":"disabled"}>${total?`הוספה לעגלה · ${ils(total)}`:"בחרו תוספת"}</button>
    <button class="btn text" data-close>לא תודה, אולי בפעם הבאה</button>
   </div></div></div>`;
