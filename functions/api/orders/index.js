@@ -1,9 +1,10 @@
 import { json, isAdmin, hasDb, addCap } from "../_shared.js";
+import { pushAll } from "../_push.js";
 
 const STATUSES = ["new", "prep", "sent", "done"];
 
 // Customer places an order (public). Saved alongside the WhatsApp message.
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, waitUntil }) {
   if (!hasDb(env)) return json({ ok: false, error: "no-db" }, 503);
   const raw = await request.text();
   if (raw.length > 30000) return json({ ok: false, error: "too-big" }, 413);
@@ -18,6 +19,12 @@ export async function onRequestPost({ request, env }) {
   rec.sw = Math.max(0, Math.min(60, parseInt(o.sw, 10) || 0));
   await env.ORDERS.put(key, JSON.stringify(rec), { expirationTtl: 60 * 60 * 24 * 120 });
   await addCap(env, day, rec.sw);
+  // notify the owner's phone(s)
+  const town = (rec.delName || "").replace(/^משלוח (ב|ל)?/, "") || (rec.del === "pickup" ? "איסוף עצמי" : "");
+  const items = rec.lines.map(l => `${l.qty}× ${l.name}`).join(", ");
+  await env.ORDERS.put("push:last", JSON.stringify({ key, day, num: n, total: rec.total, name: `${rec.first || ""} ${rec.last || ""}`.trim(), town, when: rec.when || rec.day || "", slot: rec.slot || "", items, urgent: !!rec.urgent }), { expirationTtl: 60 * 60 * 24 * 3 });
+  const p = pushAll(env).catch(() => {});
+  if (waitUntil) waitUntil(p); else await p;
   return json({ ok: true, num: n });
 }
 

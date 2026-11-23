@@ -208,6 +208,16 @@ body.hascart .nfab{bottom:calc(138px + env(safe-area-inset-bottom,0px))}
 .hero-art{height:220px;border-radius:0;position:relative;flex:none}
 .hero-art svg{width:56%;height:auto}
 .float{position:absolute;top:12px}
+.admbar{position:relative;display:flex;align-items:center;gap:10px;margin:12px 0 2px;background:var(--brown);color:#fff;border:none;border-radius:16px;padding:12px 14px;width:100%;text-align:right;font-family:var(--display);box-shadow:0 4px 14px rgba(59,42,32,.25)}
+.admbar .aic{font-size:22px}.admbar b{font-weight:900;font-size:17px;display:block;line-height:1.15}.admbar small{font-family:var(--body);font-size:12.5px;opacity:.85}
+.admbar .anew{margin-inline-start:auto;background:var(--coral);color:#fff;border-radius:99px;padding:4px 10px;font-weight:800;font-size:13px;white-space:nowrap}
+.admbar .atag{position:absolute;top:-9px;right:14px;background:var(--honey);color:var(--brown);font-size:11px;font-weight:800;border-radius:99px;padding:1px 8px}
+.admo{background:var(--white);border-radius:16px;padding:12px;border:1.5px solid var(--cream2);display:flex;flex-direction:column;gap:3px;font-size:14px}
+.admo .r1{display:flex;align-items:center;gap:8px}.admo .r1 b{font-family:var(--display);font-weight:900;font-size:16px}.admo .r1 .t{margin-inline-start:auto;font-family:var(--display);font-weight:800}
+.admo .pl{border-radius:99px;padding:2px 9px;font-family:var(--display);font-weight:700;font-size:11.5px}
+.admo .it{color:var(--leaf-d);font-weight:700;font-size:13.5px}
+.admo .lk{display:flex;gap:6px;margin-top:6px}.admo .lk a{flex:1;text-align:center;font-size:12.5px;font-weight:700;border-radius:10px;padding:8px 0;background:var(--cream);text-decoration:none;color:var(--brown)}
+.admtabs{display:flex;gap:6px}.admtabs button{border-radius:99px;padding:7px 13px;font-family:var(--display);font-weight:700;font-size:13px;background:var(--white);border:1.5px solid var(--cream2)}.admtabs button[aria-pressed="true"]{background:var(--brown);color:#fff;border-color:var(--brown)}
 .sec{font-family:var(--display);font-weight:800;font-size:15px;display:flex;gap:6px;align-items:baseline;margin-top:4px}
 .sec small{font-family:var(--body);font-weight:500;color:var(--brown2);font-size:12px}
 .opt{display:flex;align-items:center;gap:10px;background:var(--white);border:none;border-radius:14px;padding:11px 12px;font-size:14.5px;font-weight:500;width:100%;text-align:right;min-height:48px}
@@ -879,7 +889,7 @@ function freeBar(){const {sub,d}=money();if(!d||!d.free)return"";const F=d.free,
 /* ---------- HOME ---------- */
 function home(){
   const w=windowState(),name=(LS.get("profile",{})||{}).first||"";
-  let h=header()+`<div class="in">
+  let h=header()+`<div class="in">${admBar()}
   <button class="sosbtn" data-go="sos"><span class="ico" aria-hidden="true">SOS</span><span style="flex:1"><b>SOS ארוחת 10</b><small>הילד נתקע בבית הספר בלי אוכל? נביא לו ארוחה ללא גלוטן</small></span><span class="go" aria-hidden="true">←</span></button>
   <div class="heroA"><h1 class="vh">העגלה של נויה: סנדוויצ׳ים ללא גלוטן</h1>
    <button class="lg" data-story aria-label="הסיפור של נויה"><img src="${IMGU("logo.png")}" alt="" width="640" height="640"></button>
@@ -1202,9 +1212,51 @@ function render(){
   nfabUpdate();tbarUpdate();
   if(v!=="thanks")checkFree();else freeCel=false;
 }
+/* ---------- OWNER BAR: only on a device where the admin code was entered (in /admin.html). Orders come from the server and need the code. ---------- */
+const ADM={data:null,at:0,busy:false};
+const admIso=off=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Jerusalem",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(Date.now()+off*864e5));
+const admHour=()=>+new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Jerusalem",hour:"2-digit",hour12:false}).format(new Date());
+const ADM_ST={new:["חדשה","var(--coral)","#fff"],prep:["בהכנה","var(--honey)","var(--brown)"],sent:["נשלחה","#DCEFE0","var(--leaf-d)"],done:["בוצעה","#ECE6DF","var(--brown2)"]};
+function admMain(){const d=ADM.data;if(!d)return"tom";return admHour()<14&&d.today.length?"today":"tom";}
+function admBar(){
+  if(!LS.get("admkey",""))return"";
+  if(Date.now()-ADM.at>60000&&!ADM.busy)admLoad();
+  const d=ADM.data;if(!d)return `<div id="admbar"></div>`;
+  const k=admMain(),os=d[k],nNew=os.filter(o=>o.status==="new").length,cash=os.reduce((t,o)=>t+(+o.total||0),0);
+  return `<div id="admbar"><button class="admbar" data-admopen="${k}"><span class="atag">🔒 רק אצלך · מנהל</span><span class="aic" aria-hidden="true">📋</span><span><b>${os.length===1?"הזמנה אחת":os.length+" הזמנות"} ${k==="today"?"להיום":"למחר"}</b><small>${ils(cash)} במזומן · לחצו לפרטים</small></span>${nNew?`<span class="anew">🔔 ${nNew} ${nNew===1?"חדשה":"חדשות"}</span>`:`<span class="anew" style="background:rgba(255,255,255,.15)">‹</span>`}</button></div>`;
+}
+async function admLoad(){
+  ADM.busy=true;
+  try{const k=LS.get("admkey","");
+    const rs=await Promise.all([admIso(0),admIso(1)].map(d=>fetch("/api/orders?day="+d,{headers:{"X-Admin-Key":k},cache:"no-store"}).then(r=>r.status===401?{bad:1}:r.json())));
+    if(rs.some(r=>r.bad)){LS.set("admkey","");ADM.data=null;}else if(rs.every(r=>r.ok))ADM.data={today:rs[0].orders,tom:rs[1].orders};
+  }catch(e){}
+  ADM.at=Date.now();ADM.busy=false;
+  const el=document.getElementById("admbar");if(el)el.outerHTML=admBar();
+  if(S.sheet&&S.sheet.type==="adm")renderLayer();
+}
+function admSheet(){
+  const d=ADM.data||{today:[],tom:[]},k=S.sheet.tab,os=(d[k]||[]).slice().sort((a,b)=>["new","prep","sent","done"].indexOf(a.status)-["new","prep","sent","done"].indexOf(b.status)||String(a.at).localeCompare(String(b.at)));
+  const intl=p=>{p=String(p||"").replace(/\D/g,"");return p.startsWith("0")?"972"+p.slice(1):p;};
+  return `<div class="overlay" data-close><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dlg-t"><div class="body in" style="padding-top:16px;display:flex;flex-direction:column;gap:10px">
+   <div style="display:flex;align-items:center;gap:8px"><h2 class="h" id="dlg-t" style="font-size:22px;margin:0">📋 ההזמנות שלי</h2><span class="sp" style="flex:1"></span><button class="ic" data-close aria-label="סגירה">✕</button></div>
+   <span style="font-size:13px;color:var(--brown2)">🔒 רק אצלך · נשמר בשרת ונפתח רק עם קוד המנהל</span>
+   <div class="admtabs" role="group" aria-label="איזה יום"><button data-admtab="today" aria-pressed="${k==="today"}">היום · ${d.today.length}</button><button data-admtab="tom" aria-pressed="${k==="tom"}">מחר · ${d.tom.length}</button></div>
+   ${os.length?os.map(o=>{const st=ADM_ST[o.status]||ADM_ST.new,pick=o.del==="pickup",nav=o.loc?`https://waze.com/ul?ll=${o.loc.lat},${o.loc.lng}&navigate=yes`:`https://waze.com/ul?q=${encodeURIComponent(o.address||"")}&navigate=yes`;
+     return `<div class="admo"><div class="r1"><b>#${esc(o.num)} · ${esc(o.first)} ${esc(o.last)}</b><span class="pl" style="background:${st[1]};color:${st[2]}">${st[0]}</span>${o.urgent?'<span class="pl" style="background:var(--err);color:#fff">דחוף</span>':""}<span class="t">${ils(o.total)}</span></div>
+     <span>📍 ${pick?"איסוף עצמי":esc(o.address)}${o.slot?` · 🕐 ${esc(o.slot)}`:""}</span><span>📞 <span dir="ltr">${esc(o.phone)}</span></span>${o.notes?`<span>📝 ${esc(o.notes)}</span>`:""}
+     <span class="it">${o.lines.map(l=>`${l.qty}× ${esc(l.name)}${(l.opts||[]).length?" ("+esc(l.opts.join(", "))+")":""}`).join(" · ")}</span>
+     <div class="lk"><a href="tel:${esc(o.phone)}">📞 חיוג</a><a href="https://wa.me/${intl(o.phone)}" target="_blank" rel="noopener">💬 וואטסאפ</a>${pick?"":`<a href="${esc(nav)}" target="_blank" rel="noopener">🗺️ Waze</a>`}</div></div>`;}).join(""):`<p style="margin:0;background:var(--white);border-radius:16px;padding:16px">אין הזמנות ${k==="today"?"להיום":"למחר"} עדיין.</p>`}
+   <a class="btn leaf" href="/admin.html">🍳 לדף המטבח המלא (בונים ושליחה לשליח)</a>
+  </div></div></div>`;
+}
+document.addEventListener("click",e=>{
+  const o=e.target.closest("[data-admopen]");if(o){opener=o;S.sheet={type:"adm",tab:o.dataset.admopen};renderLayer(true);admLoad();return;}
+  const t=e.target.closest("[data-admtab]");if(t&&S.sheet&&S.sheet.type==="adm"){S.sheet.tab=t.dataset.admtab;renderLayer();}
+});
 function renderLayer(fresh){
   const sc=$("#layer .sheet")?.scrollTop||0,act=document.activeElement&&document.activeElement.dataset?Object.entries(document.activeElement.dataset)[0]:null;
-  $("#layer").innerHTML=S.sheet?(S.sheet.type==="dish"?dishSheet():S.sheet.type==="sweet"?sweetSheet():S.sheet.type==="story"?storySheet():S.sheet.type==="share"?shareSheet():S.sheet.type==="why"?whySheet():S.sheet.type==="town"?townSheet():S.sheet.type==="dprice"?dpriceSheet():upsellSheet()):"";
+  $("#layer").innerHTML=S.sheet?(S.sheet.type==="adm"?admSheet():S.sheet.type==="dish"?dishSheet():S.sheet.type==="sweet"?sweetSheet():S.sheet.type==="story"?storySheet():S.sheet.type==="share"?shareSheet():S.sheet.type==="why"?whySheet():S.sheet.type==="town"?townSheet():S.sheet.type==="dprice"?dpriceSheet():upsellSheet()):"";
   $("#layer").classList.toggle("still",!fresh);
   document.body.style.overflow=S.sheet?"hidden":"";nfabUpdate();
   const sh=$("#layer .sheet");

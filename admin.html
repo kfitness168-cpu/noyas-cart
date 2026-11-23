@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#FFF8EE">
+<link rel="manifest" href="/admin.webmanifest">
+<link rel="apple-touch-icon" href="/admin-icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="נויה ניהול">
 <title>ניהול הזמנות · העגלה של נויה</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800;900&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
@@ -141,7 +145,7 @@ function localOrders(){const st=LS.get("admstat",{});return LS.get("orders",[]).
 async function load(){
   let r=await api("/api/orders?day="+A.day).catch(()=>({status:0}));
   if(r.status===401){A.key="";LS.set("admkey","");A.err="צריך להתחבר שוב";return loginView();}
-  if(r.ok){A.db=true;A.orders=r.orders;}else{A.db=false;A.orders=localOrders().filter(o=>(o.dayIso||"")===A.day);}
+  if(r.ok){A.db=true;A.orders=r.orders;keyForSW();}else{A.db=false;A.orders=localOrders().filter(o=>(o.dayIso||"")===A.day);}
   render();
 }
 async function setStatus(o,s){
@@ -237,6 +241,8 @@ function render(){
   ${kitchen()}
   <h3 class="sec">📋 ההזמנות (לחצו לפתיחת הבון)</h3>
   <div class="list">${os.map(o=>A.open===o.key?ticket(o):`<button class="row" data-open="${esc(o.key)}"><span class="no">#${esc(o.num)}</span><span class="w"><b>${esc(o.first)} ${esc(o.last)}</b>${o.urgent?' <span class="urg">דחוף</span>':""}<br>${o.del==="pickup"?"איסוף עצמי":esc(o.address)}</span><span class="sum">${ils(o.total)}</span><span class="pill s-${o.status}">${ST[o.status]}</span></button>`).join("")||`<div class="row" style="justify-content:center;color:var(--brown2)">אין הזמנות ליום הזה</div>`}</div>
+  <h3 class="sec">🔔 התראות על הזמנות חדשות</h3>
+  <div class="card">${pushCard()}</div>
   <h3 class="sec">⚙️ הגדרות</h3>
   <form class="card" id="sf"><label>שם השליח<input id="cname" value="${esc(c.name||"")}" autocomplete="off"></label><label>טלפון השליח (וואטסאפ)<input id="cphone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" value="${esc(c.phone||"")}" placeholder="05X-XXXXXXX"></label><button class="big b-done" type="submit" style="margin-top:2px">שמירה</button><button type="button" class="del" data-logout style="align-self:flex-start">יציאה מהחשבון</button></form>`;
 }
@@ -255,7 +261,46 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{if(e.target.id==="dpick"&&e.target.value){A.day=e.target.value;A.open=null;load();}});
 setInterval(()=>{if(A.key&&document.visibilityState==="visible"&&!document.activeElement?.matches?.("input"))load();},30000);
-if(A.key)load();else loginView();
+/* ---------- push notifications ---------- */
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const standalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const P={msg:""};
+function keyForSW(){try{if("caches" in window)caches.open("noya-admin").then(c=>c.put("/__admkey",new Response(A.key)));}catch(e){}}
+function pushCard(){
+  const can="serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+  const on=can&&Notification.permission==="granted"&&LS.get("pushOn",false);
+  if(A.db===false)return `<span>ההתראות יעבדו אחרי שחיבור שמירת ההזמנות פעיל.</span>`;
+  if(isIOS&&!standalone)return `<b>באייפון: קודם מוסיפים את דף הניהול למסך הבית</b><span style="line-height:1.7">1. בספארי לוחצים על כפתור השיתוף <b>⬆️</b> (למטה באמצע)<br>2. בוחרים <b>"הוספה למסך הבית"</b> ← "הוסף"<br>3. פותחים את האייקון החדש <b>"נויה ניהול"</b> מהמסך הראשי<br>4. חוזרים לכאן ולוחצים "הפעלת התראות"</span>`;
+  if(!can)return `<span>הדפדפן הזה לא תומך בהתראות. נסו בכרום (אנדרואיד) או בספארי (אייפון).</span>`;
+  if(Notification.permission==="denied")return `<span>ההתראות חסומות בטלפון. פותחים את הגדרות הדפדפן ← הרשאות אתר ← התראות ← מאפשרים לאתר הזה.</span>`;
+  return on?`<b style="color:var(--leaf-d)">✓ ההתראות פועלות בטלפון הזה</b><span>על כל הזמנה חדשה תקפוץ לך הודעה, גם כשהאתר סגור.</span><button type="button" class="big b-prep" data-ptest>שליחת התראת ניסיון</button><span role="status">${esc(P.msg)}</span>`
+    :`<span>מקבלים הודעה בטלפון על כל הזמנה חדשה, גם כשהאתר סגור. בחינם.</span><button type="button" class="big b-wa" data-pon>🔔 הפעלת התראות בטלפון הזה</button><span role="status" class="err">${esc(P.msg)}</span>`;
+}
+function u8(b64){const s=atob(b64.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((b64.length+3)%4));return Uint8Array.from(s,c=>c.charCodeAt(0));}
+async function pushOn(){
+  try{
+    P.msg="מפעיל…";render();
+    const perm=await Notification.requestPermission();if(perm!=="granted"){P.msg="צריך ללחוץ \"אפשר\" כדי לקבל התראות";render();return;}
+    keyForSW();
+    const reg=await navigator.serviceWorker.register("/sw.js");await navigator.serviceWorker.ready;
+    const k=await api("/api/push");if(!k.ok)throw new Error("key");
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(k.key)});
+    const r=await api("/api/push",{method:"POST",body:JSON.stringify({sub:sub.toJSON()})});if(!r.ok)throw new Error("save");
+    LS.set("pushOn",true);P.msg="";render();toast("ההתראות הופעלו ✓");
+    await api("/api/push",{method:"POST",body:JSON.stringify({test:true})});
+  }catch(e){P.msg="לא הצלחנו להפעיל. נסו שוב.";render();}
+}
+document.addEventListener("click",async e=>{
+  if(e.target.closest("[data-pon]")){pushOn();return;}
+  if(e.target.closest("[data-ptest]")){P.msg="שולח…";render();const r=await api("/api/push",{method:"POST",body:JSON.stringify({test:true})}).catch(()=>({}));P.msg=r.ok?(r.sent?"נשלחה ✓ אמורה לקפוץ עכשיו":"לא נמצא טלפון רשום. לחצו שוב על הפעלה."):"לא נשלחה";if(r.ok&&!r.sent)LS.set("pushOn",false);render();}
+});
+/* open an order straight from a notification: /admin.html#o=<key> */
+function fromHash(){const m=location.hash.match(/^#o=(.+)$/);if(!m)return false;const k=decodeURIComponent(m[1]);const d=k.split(":")[1];if(/^\d{4}-\d{2}-\d{2}$/.test(d||"")){A.day=d;A.open=k;}history.replaceState(null,"",location.pathname);return true;}
+window.addEventListener("hashchange",()=>{if(fromHash()&&A.key)load().then(()=>$("#tk")?.scrollIntoView({block:"start"}));});
+const fromN=fromHash();
+if("serviceWorker" in navigator&&LS.get("pushOn",false))navigator.serviceWorker.register("/sw.js").catch(()=>{});
+if(A.key)load().then(()=>{if(fromN)$("#tk")?.scrollIntoView({block:"start"});});else loginView();
 </script>
 </body>
 </html>
