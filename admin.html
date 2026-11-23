@@ -156,7 +156,7 @@ async function delOrder(o){
 
 /* ---------- ticket logic ---------- */
 // What actually goes into each line: ingredients the customer kept + choices they made (choices that start with "בלי" are left off)
-const BREADS=["לחמנייה","פיתה"];const breadOf=l=>(l.opts||[]).find(x=>BREADS.includes(x))||(/בייגל/.test(l.name)?"בייגל":/שקשוקה/.test(l.name)?"לחמנייה":"");
+const BREADS=["לחמנייה","פיתה"];const breadOf=l=>(l.opts||[]).find(x=>BREADS.includes(x))||(/בייגל/.test(l.name)?"בייגל":/שקשוקה/.test(l.name)?"בייגל":"");
 function partsOf(l){const ing=(l.ing||[]).map(n=>({n,opt:false}));const op=(l.opts||[]).filter(x=>!/^בלי /.test(x)&&!BREADS.includes(x)).map(n=>({n,opt:true}));return ing.concat(op);}
 const chkKey=o=>"tk:"+o.key;
 function checks(o){return LS.get(chkKey(o),{});}
